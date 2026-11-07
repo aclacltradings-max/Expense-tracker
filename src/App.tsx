@@ -7,6 +7,7 @@ import { MonthlySummary } from './components/MonthlySummary';
 import { Modal } from './components/ui/Modal';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
 import { PwaToasts } from './components/PwaToasts';
+import { InstallGuide } from './components/InstallGuide';
 import { DownloadIcon, PlusIcon } from './components/icons';
 import { useExpenseTracker } from './hooks/useExpenseTracker';
 import { usePwa } from './hooks/usePwa';
@@ -46,6 +47,7 @@ export default function App() {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [installGuideOpen, setInstallGuideOpen] = useState(false);
 
   const summary = useMemo(() => summarise(transactions), [transactions]);
   const months = useMemo(() => monthlySummary(transactions), [transactions]);
@@ -101,15 +103,24 @@ export default function App() {
                 Clear data
               </button>
             )}
-            {pwa.canInstall && (
+            {!pwa.isInstalled && (pwa.canInstall || pwa.needsManualInstall) && (
               <button
                 type="button"
-                onClick={() => void pwa.install()}
-                className="btn btn-ghost hidden sm:inline-flex"
+                onClick={() => {
+                  if (pwa.canInstall) {
+                    void pwa.install().then((outcome) => {
+                      if (outcome === 'unavailable') setInstallGuideOpen(true);
+                    });
+                  } else {
+                    setInstallGuideOpen(true);
+                  }
+                }}
+                className="btn btn-ghost"
                 title="Install Expense Tracker as an app"
               >
                 <DownloadIcon className="h-4 w-4" />
-                Install app
+                <span className="hidden sm:inline">Install app</span>
+                <span className="sr-only sm:hidden">Install app</span>
               </button>
             )}
             <button type="button" onClick={openAddForm} className="btn btn-primary">
@@ -237,6 +248,16 @@ export default function App() {
         }}
         onCancel={() => setConfirmClear(false)}
       />
+
+      {/* Manual install steps for browsers without an install prompt */}
+      <Modal
+        open={installGuideOpen}
+        onClose={() => setInstallGuideOpen(false)}
+        title="Install Expense Tracker"
+        description="Add it to your home screen or desktop for a full-screen, offline-capable app."
+      >
+        <InstallGuide isIos={/iPad|iPhone|iPod/.test(navigator.userAgent)} />
+      </Modal>
 
       {/* Offline-ready notice and new-version prompt */}
       <PwaToasts pwa={pwa} />

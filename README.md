@@ -191,11 +191,11 @@ assets out from under a running session.
 A registration is only attempted in a production build — the dev server would
 otherwise cache modules and break hot reload.
 
-### Install on Android (Chrome)
+### Install on Android (Chrome / Edge)
 
-1. Open the app in Chrome. In production it must be served over **HTTPS** (or
-   `localhost`), which Chrome requires for service workers.
-2. Wait for the page to finish loading — the service worker installs and the app
+1. Open the app over **HTTPS** (or `localhost`). Chrome refuses to register a
+   service worker — and therefore refuses to install — on plain HTTP.
+2. Wait for the page to finish loading. The service worker installs and the app
    becomes installable.
 3. Install in either way:
    - Tap the **Install app** button in the header, then **Install** in the prompt, or
@@ -206,6 +206,37 @@ otherwise cache modules and break hot reload.
 
 To remove it, long-press the home-screen icon and choose **Uninstall** (or
 **App info → Uninstall** in Android settings).
+
+### Install on iOS (Safari)
+
+Safari never fires `beforeinstallprompt`, so there is no in-page install button.
+The header's **Install app** control opens a short guide; the steps are:
+
+1. Open the app in **Safari** over HTTPS.
+2. Tap the **Share** button in the toolbar.
+3. Scroll down and tap **Add to Home Screen**, then **Add**.
+4. Launch from the new icon — it opens full screen (standalone), with the status
+   bar styled by `apple-mobile-web-app-status-bar-style`.
+
+### Install on desktop (Chrome / Edge)
+
+1. Open the app over HTTPS or `localhost`.
+2. Click the **install icon** in the address bar, or use the header's
+   **Install app** button, or **⋮ → Install Expense Tracker…**.
+3. Confirm. The app gets its own window, a desktop/Start-menu shortcut, and its
+   own taskbar entry — no browser chrome, no tabs.
+
+Firefox on desktop does not support installing PWAs. Everything still works as a
+normal web page, including offline caching once the service worker has run.
+
+### Why an install button may not appear
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| No **Install app** button, no address-bar icon | Page served over plain HTTP, or SW not yet active | Serve over HTTPS / `localhost`, then reload |
+| Button missing in Chrome after a dismiss | Chrome suppresses the prompt for a while | Use **⋮ → Install app**, or clear site data |
+| Only a guide dialog appears | Browser is Safari or Firefox | Follow the on-screen steps |
+| 403 "Blocked request" through a tunnel | Vite host allowlist | Add the host to `server.allowedHosts` / `preview.allowedHosts` |
 
 ## Configuration
 

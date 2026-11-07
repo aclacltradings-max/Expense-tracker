@@ -15,10 +15,13 @@ export interface PwaState {
   updateReady: boolean;
   /** The browser offered an install prompt (Android Chrome / desktop Chromium). */
   canInstall: boolean;
+  /** Install is possible but needs manual steps (iOS Safari, Firefox). */
+  needsManualInstall: boolean;
   /** Already running as an installed app. */
   isInstalled: boolean;
   applyUpdate: () => void;
-  install: () => Promise<void>;
+  /** Resolves to 'accepted' | 'dismissed', or 'unavailable' if no prompt exists. */
+  install: () => Promise<'accepted' | 'dismissed' | 'unavailable'>;
 }
 
 function detectStandalone(): boolean {
@@ -27,11 +30,26 @@ function detectStandalone(): boolean {
   return window.matchMedia('(display-mode: standalone)').matches || iosStandalone;
 }
 
+/**
+ * Safari and Firefox never fire `beforeinstallprompt`, so the only route is the
+ * browser's own share/menu sheet. Detect them to offer instructions instead of
+ * a button that can never appear.
+ */
+function needsManualInstall(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  const isIos = /iPad|iPhone|iPod/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
+  const isSafari = /^((?!chrome|android|crios|fxios|edg).)*safari/i.test(ua);
+  const isFirefox = /firefox|fxios/i.test(ua);
+  return isIos || isSafari || isFirefox;
+}
+
 export function usePwa(): PwaState {
   const [update, setUpdate] = useState<ServiceWorkerUpdate | null>(null);
   const [offlineReady, setOfflineReady] = useState(false);
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(detectStandalone);
+  const [manualInstall, setManualInstall] = useState(false);
 
   useEffect(
     () =>
@@ -63,11 +81,18 @@ export function usePwa(): PwaState {
     };
   }, []);
 
-  const install = useCallback(async () => {
-    if (!installEvent) return;
+  // Only offer manual guidance when no native prompt is available to us.
+  useEffect(() => {
+    setManualInstall(needsManualInstall());
+  }, []);
+
+  const install = useCallback(async (): Promise<'accepted' | 'dismissed' | 'unavailable'> => {
+    if (!installEvent) return 'unavailable';
     await installEvent.prompt();
     const { outcome } = await installEvent.userChoice;
-    if (outcome !== 'accepted') setInstallEvent(null);
+    // A dismissed prompt cannot be re-shown from the same event.
+    setInstallEvent(null);
+    return outcome;
   }, [installEvent]);
 
   const applyUpdate = useCallback(() => {
@@ -78,6 +103,7 @@ export function usePwa(): PwaState {
     offlineReady,
     updateReady: update !== null,
     canInstall: installEvent !== null && !isInstalled,
+    needsManualInstall: manualInstall && !installEvent && !isInstalled,
     isInstalled,
     applyUpdate,
     install,

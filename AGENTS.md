@@ -46,3 +46,11 @@ No backend: all state persists in `localStorage`.
 - Icons are generated with `npm run icons` (`scripts/generate-icons.mjs`), which writes
   PNGs using a built-in zlib encoder — no image dependencies.
 - Test the PWA with `npm run build && npm run preview` (served on port 4173).
+- `vite.config.ts` sets `allowedHosts` for `server` and `preview`. Without it, Vite
+  answers 403 "Blocked request" for the sandbox proxy hosts and the app never loads.
+  Add any new proxy host suffix there before testing through a tunnel.
+- The install control appears only when the browser fires `beforeinstallprompt`
+  (Chrome/Edge) or when `needsManualInstall` detects Safari/Firefox, in which case
+  `InstallGuide` shows the Share-sheet / menu steps instead.
+- Installability requires a secure context: HTTPS or `localhost`. A plain-HTTP IP
+  address will never be installable.
