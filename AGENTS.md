@@ -31,3 +31,18 @@ No backend: all state persists in `localStorage`.
 - All aggregates live in `utils/calculations.ts` as pure functions — keep components thin.
 - Tailwind component classes (`.card`, `.btn`, `.field-input`) are defined in `src/index.css`.
 - Recharts is lazy-loaded via `React.lazy` in `App.tsx` to keep the initial bundle small.
+
+## PWA
+
+- PWA assets live in `public/` and are copied to `dist/` verbatim: `manifest.webmanifest`,
+  `sw.js`, `offline.html`, `icons/`.
+- `public/sw.js` is plain JS (not bundled) — it is served from the origin root, so it can
+  control the whole scope. It precaches the shell on install and never calls `skipWaiting()`
+  on its own.
+- The service worker is registered only when `import.meta.env.PROD` (see
+  `src/pwa/registerServiceWorker.ts`), so it never interferes with Vite HMR.
+- Updates: the page detects a waiting worker, shows a toast, and posts `SKIP_WAITING` on
+  confirmation; `controllerchange` then triggers a single reload.
+- Icons are generated with `npm run icons` (`scripts/generate-icons.mjs`), which writes
+  PNGs using a built-in zlib encoder — no image dependencies.
+- Test the PWA with `npm run build && npm run preview` (served on port 4173).

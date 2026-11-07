@@ -6,8 +6,10 @@ import { FilterBar, EMPTY_FILTERS } from './components/FilterBar';
 import { MonthlySummary } from './components/MonthlySummary';
 import { Modal } from './components/ui/Modal';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
-import { PlusIcon } from './components/icons';
+import { PwaToasts } from './components/PwaToasts';
+import { DownloadIcon, PlusIcon } from './components/icons';
 import { useExpenseTracker } from './hooks/useExpenseTracker';
+import { usePwa } from './hooks/usePwa';
 import { applyFilters, monthlySummary, sortByNewest, summarise } from './utils/calculations';
 import type { Transaction, TransactionFilters } from './types';
 
@@ -37,6 +39,7 @@ export default function App() {
     deleteCategory,
     clearAll,
   } = useExpenseTracker();
+  const pwa = usePwa();
 
   const [filters, setFilters] = useState<TransactionFilters>(EMPTY_FILTERS);
   const [formOpen, setFormOpen] = useState(false);
@@ -96,6 +99,17 @@ export default function App() {
                 className="btn btn-ghost hidden sm:inline-flex"
               >
                 Clear data
+              </button>
+            )}
+            {pwa.canInstall && (
+              <button
+                type="button"
+                onClick={() => void pwa.install()}
+                className="btn btn-ghost hidden sm:inline-flex"
+                title="Install Expense Tracker as an app"
+              >
+                <DownloadIcon className="h-4 w-4" />
+                Install app
               </button>
             )}
             <button type="button" onClick={openAddForm} className="btn btn-primary">
@@ -223,6 +237,9 @@ export default function App() {
         }}
         onCancel={() => setConfirmClear(false)}
       />
+
+      {/* Offline-ready notice and new-version prompt */}
+      <PwaToasts pwa={pwa} />
     </div>
   );
 }
