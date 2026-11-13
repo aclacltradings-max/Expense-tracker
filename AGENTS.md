@@ -12,6 +12,8 @@ No backend: all state persists in `localStorage`.
 - `npm run build` — `tsc -b` then `vite build` (must pass before committing)
 - `npm run typecheck` — type-check only
 - `npm run preview` — serve the production build
+- `npm run cap:sync` — copy `dist/` into the Android project and sync plugins
+- `npm run android:apk` — build web assets, sync, and assemble the debug APK (needs a JDK + Android SDK)
 
 ## Architecture
 
@@ -54,3 +56,18 @@ No backend: all state persists in `localStorage`.
   `InstallGuide` shows the Share-sheet / menu steps instead.
 - Installability requires a secure context: HTTPS or `localhost`. A plain-HTTP IP
   address will never be installable.
+
+## Android (Capacitor)
+
+- The native shell is Capacitor 8. `capacitor.config.ts` holds `appId`
+  (`com.acltradings.expensetracker`), `appName` (`Expense Tracker`) and `webDir` (`dist`).
+- `android/` is a generated Gradle project. It is committed, but treat it as
+  regenerable: re-run `npx cap add android` if it is ever deleted.
+- After changing web code, run `npm run build` then `npm run cap:sync` so the
+  bundled assets in `android/app/src/main/assets/public` match `dist/`.
+- Generated files are gitignored by `android/.gitignore`: `app/src/main/assets/public`,
+  `app/src/main/assets/capacitor.config.json`, `capacitor-cordova-android-plugins/`.
+- The toolchain is JDK 21 and compileSdk/targetSdk 36 (see `android/variables.gradle`
+  and `android/app/capacitor.build.gradle`).
+- CI builds a debug APK in `.github/workflows/android-debug-apk.yml`. It installs the
+  Android SDK and JDK on the runner, so no local Android SDK is required.
