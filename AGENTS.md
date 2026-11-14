@@ -69,5 +69,7 @@ No backend: all state persists in `localStorage`.
   `app/src/main/assets/capacitor.config.json`, `capacitor-cordova-android-plugins/`.
 - The toolchain is JDK 21 and compileSdk/targetSdk 36 (see `android/variables.gradle`
   and `android/app/capacitor.build.gradle`).
-- CI builds a debug APK in `.github/workflows/android-debug-apk.yml`. It installs the
-  Android SDK and JDK on the runner, so no local Android SDK is required.
+- CI builds a debug APK in `.github/workflows/android-apk.yml`. It installs the
+  Android SDK and JDK on the runner, so no local Android SDK is required. The workflow
+  runs on push and pull request to `main`, and can also be started manually. It uploads
+  the APK as the `expense-tracker-debug-apk` artefact.
