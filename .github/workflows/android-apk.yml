@@ -8,7 +8,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 # A double-tap on "Run workflow" (easy to do on a phone) would otherwise queue a
 # second APK build that produces an identical artefact. Keep only the newest run
@@ -81,3 +81,30 @@ jobs:
           name: expense-tracker-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # Actions artefacts are always delivered as a .zip and need a GitHub login to
+      # download, which makes them awkward to install straight from a phone. Publishing
+      # the raw .apk as a release asset gives a direct, public download link that
+      # Android can open and install in one tap.
+      - name: Rename APK for direct download
+        run: |
+          mkdir -p release
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+             release/expense-tracker-debug.apk
+          ls -l release/
+
+      - name: Publish APK to a rolling release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: Latest debug APK
+          body: |
+            Direct-download debug build of Expense Tracker.
+
+            Built from commit ${{ github.sha }} on ${{ github.ref_name }}.
+
+            Install: download `expense-tracker-debug.apk` below and open it on your
+            Android device. You may need to allow "Install unknown apps" for your browser.
+          files: release/expense-tracker-debug.apk
+          make_latest: true
