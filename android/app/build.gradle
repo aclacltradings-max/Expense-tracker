@@ -16,10 +16,30 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        // Populated from CI environment variables. Left empty for local builds so
+        // `assembleDebug` and an unsigned `assembleRelease` keep working without a
+        // keystore on the developer's machine.
+        release {
+            def storePath = System.getenv("ANDROID_KEYSTORE_PATH")
+            if (storePath) {
+                storeFile file(storePath)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Only attach the signing config when a keystore was supplied, otherwise
+            // Gradle fails on a null storeFile during local `assembleRelease`.
+            if (System.getenv("ANDROID_KEYSTORE_PATH")) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
