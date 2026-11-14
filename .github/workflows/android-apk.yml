@@ -10,6 +10,13 @@ on:
 permissions:
   contents: read
 
+# A double-tap on "Run workflow" (easy to do on a phone) would otherwise queue a
+# second APK build that produces an identical artefact. Keep only the newest run
+# per branch and cancel the superseded one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-apk:
     name: Assemble debug APK
